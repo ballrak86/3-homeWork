@@ -1,0 +1,17 @@
+Установка zfs и создание пула
+https://www.symmcom.com/docs/how-tos/storages/how-to-install-zfs-on-centos-7
+
+Создание zfs cache
+https://www.unixarena.com/2013/07/zfs-zpool-cache-and-log-devices.html/
+
+zfs смена точки монтирования
+https://docs.oracle.com/cd/E19253-01/820-0836/gaztn/index.html
+
+И просто хорошая документация по zfs
+https://docs.oracle.com/cd/E19253-01/820-0836/index.html
+
+статья про кеш zfs
+https://www.stableit.ru/2010/10/zfs-arc-l2arc.html
+
+настройка кеш zfs
+https://tehnojam.ru/category/software/ustanavlivaem-zfs-v-linux-chast-2-zvols-lz4-arc-i-zils.html

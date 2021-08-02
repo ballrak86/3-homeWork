@@ -1,0 +1,428 @@
+root@otssTestServer:/home/lx/git/stands-03-lvm# vagrant ssh
+Last login: Sun Jun 20 09:44:06 2021 from 10.0.2.2
+[vagrant@lvm ~]$ sudo -i
+[root@lvm ~]# lsblk
+NAME                       MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                          8:0    0   40G  0 disk
+├─sda1                       8:1    0    1M  0 part
+├─sda2                       8:2    0    1G  0 part /boot
+└─sda3                       8:3    0   39G  0 part
+  ├─VolGroup00-LogVol00    253:0    0    8G  0 lvm  /
+  ├─VolGroup00-LogVol01    253:1    0  1.5G  0 lvm  [SWAP]
+  └─VolGroup00-LogVol_Home 253:7    0    2G  0 lvm  /home
+sdb                          8:16   0   10G  0 disk
+sdc                          8:32   0    2G  0 disk
+├─vg_var-lv_var_rmeta_0    253:2    0    4M  0 lvm
+│ └─vg_var-lv_var          253:6    0  952M  0 lvm  /var
+└─vg_var-lv_var_rimage_0   253:3    0  952M  0 lvm
+  └─vg_var-lv_var          253:6    0  952M  0 lvm  /var
+sdd                          8:48   0    1G  0 disk
+├─vg_var-lv_var_rmeta_1    253:4    0    4M  0 lvm
+│ └─vg_var-lv_var          253:6    0  952M  0 lvm  /var
+└─vg_var-lv_var_rimage_1   253:5    0  952M  0 lvm
+  └─vg_var-lv_var          253:6    0  952M  0 lvm  /var
+sde                          8:64   0    1G  0 disk
+[root@lvm ~]# pvcreate /dev/sdb /dev/sde
+  Physical volume "/dev/sdb" successfully created.
+  Physical volume "/dev/sde" successfully created.
+[root@lvm ~]# vgcreate zfs_VG /dev/sdb /dev/sde
+  Volume group "zfs_VG" successfully created
+[root@lvm ~]# lvcreate -n opt_LV -l 50%VG zfs_VG
+WARNING: xfs signature detected on /dev/zfs_VG/opt_LV at offset 0. Wipe it? [y/n]: y
+  Wiping xfs signature on /dev/zfs_VG/opt_LV.
+  Logical volume "opt_LV" created.
+[root@lvm ~]# lvcreate -n cache_LV -l 50%VG zfs_VG
+  Logical volume "cache_LV" created.
+[root@lvm ~]# lsblk
+NAME                       MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                          8:0    0   40G  0 disk
+├─sda1                       8:1    0    1M  0 part
+├─sda2                       8:2    0    1G  0 part /boot
+└─sda3                       8:3    0   39G  0 part
+  ├─VolGroup00-LogVol00    253:0    0    8G  0 lvm  /
+  ├─VolGroup00-LogVol01    253:1    0  1.5G  0 lvm  [SWAP]
+  └─VolGroup00-LogVol_Home 253:7    0    2G  0 lvm  /home
+sdb                          8:16   0   10G  0 disk
+├─zfs_VG-opt_LV            253:8    0  5.5G  0 lvm
+└─zfs_VG-cache_LV          253:9    0  5.5G  0 lvm
+sdc                          8:32   0    2G  0 disk
+├─vg_var-lv_var_rmeta_0    253:2    0    4M  0 lvm
+│ └─vg_var-lv_var          253:6    0  952M  0 lvm  /var
+└─vg_var-lv_var_rimage_0   253:3    0  952M  0 lvm
+  └─vg_var-lv_var          253:6    0  952M  0 lvm  /var
+sdd                          8:48   0    1G  0 disk
+├─vg_var-lv_var_rmeta_1    253:4    0    4M  0 lvm
+│ └─vg_var-lv_var          253:6    0  952M  0 lvm  /var
+└─vg_var-lv_var_rimage_1   253:5    0  952M  0 lvm
+  └─vg_var-lv_var          253:6    0  952M  0 lvm  /var
+sde                          8:64   0    1G  0 disk
+└─zfs_VG-cache_LV          253:9    0  5.5G  0 lvm
+[root@lvm ~]# yum -y install http://download.zfsonlinux.org/epel/zfs-release.el7_5.noarch.rpm
+Loaded plugins: fastestmirror
+zfs-release.el7_5.noarch.rpm                                                                                                          | 5.3 kB  00:00:00
+Examining /var/tmp/yum-root-KckDcV/zfs-release.el7_5.noarch.rpm: zfs-release-1-5.el7.centos.noarch
+Marking /var/tmp/yum-root-KckDcV/zfs-release.el7_5.noarch.rpm to be installed
+Resolving Dependencies
+--> Running transaction check
+---> Package zfs-release.noarch 0:1-5.el7.centos will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+=============================================================================================================================================================
+ Package                           Arch                         Version                                Repository                                       Size
+=============================================================================================================================================================
+Installing:
+ zfs-release                       noarch                       1-5.el7.centos                         /zfs-release.el7_5.noarch                       2.9 k
+
+Transaction Summary
+=============================================================================================================================================================
+Install  1 Package
+
+Total size: 2.9 k
+Installed size: 2.9 k
+Downloading packages:
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : zfs-release-1-5.el7.centos.noarch                                                                                                         1/1
+  Verifying  : zfs-release-1-5.el7.centos.noarch                                                                                                         1/1
+
+Installed:
+  zfs-release.noarch 0:1-5.el7.centos
+
+Complete!
+[root@lvm ~]# vi /etc/yum.repos.d/zfs.repo
+[root@lvm ~]# yum -y install zfs
+Loaded plugins: fastestmirror
+Loading mirror speeds from cached hostfile
+ * base: mirror.reconn.ru
+ * extras: mirror.reconn.ru
+ * updates: mirror.surf
+zfs-kmod                                                                                                                              | 2.9 kB  00:00:00
+zfs-kmod/x86_64/primary_db                                                                                                            | 145 kB  00:00:01
+Resolving Dependencies
+--> Running transaction check
+---> Package zfs.x86_64 0:0.7.12-1.el7_5 will be installed
+--> Processing Dependency: zfs-kmod = 0.7.12 for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: spl = 0.7.12 for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: libzpool2 = 0.7.12 for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: libzfs2 = 0.7.12 for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: libuutil1 = 0.7.12 for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: libnvpair1 = 0.7.12 for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: sysstat for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: libzpool.so.2()(64bit) for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: libzfs_core.so.1()(64bit) for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: libzfs.so.2()(64bit) for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: libuutil.so.1()(64bit) for package: zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: libnvpair.so.1()(64bit) for package: zfs-0.7.12-1.el7_5.x86_64
+--> Running transaction check
+---> Package kmod-zfs.x86_64 0:0.7.12-1.el7_5 will be installed
+--> Processing Dependency: ksym(zone_get_hostid) = 0xba3e2d71 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(zio_arena) = 0xb0364551 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(z_uncompress) = 0xd8b5eb52 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(z_compress_level) = 0x55de2e28 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(xdrmem_create) = 0xddd4a3d3 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_set_pwd) = 0xf7b48661 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_seek) = 0xa25d7708 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_releasef) = 0x65f3602b for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_rdwr) = 0xda0b5604 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_openat) = 0x584f0fa4 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_open) = 0x6cd72a01 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_mode_to_vtype) = 0x5ecf6f91 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_getf) = 0x017c4698 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_getattr) = 0xa518c2ad for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_fsync) = 0xb7b69dab for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vn_close) = 0x19302b91 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vmem_size) = 0x29eec2f0 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(vcmn_err) = 0x52778ec7 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(tsd_set) = 0x1285cb78 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(tsd_get) = 0x3323ccb1 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(tsd_destroy) = 0x8eb0a41f for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(tsd_create) = 0x958b84e3 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_wait_outstanding) = 0x68c4f9da for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_wait_id) = 0x24bd0182 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_wait) = 0x2e2e322f for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_member) = 0xf12d1676 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_init_ent) = 0xa08322cc for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_dispatch_ent) = 0x5dbd6138 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_dispatch_delay) = 0xdb77dd01 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_dispatch) = 0x589fea99 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_destroy) = 0x6b220bcb for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_create) = 0xcd44eb00 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(taskq_cancel_id) = 0xd92839b8 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(system_taskq) = 0x05f08dbe for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(system_delay_taskq) = 0x6af554dd for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(strfree) = 0x1b8f1d1e for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(strdup) = 0xc810362f for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_vmem_zalloc) = 0x6c2c274e for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_vmem_free) = 0x0ff749bc for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_vmem_alloc) = 0xfe172afe for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_panic) = 0xbc32eee7 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_kmem_zalloc) = 0x9b0325e8 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_kmem_free) = 0x6d16801a for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_kmem_cache_set_move) = 0xe17fb160 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_kmem_cache_reap_now) = 0x83aa5282 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_kmem_cache_free) = 0xe5779a08 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_kmem_cache_destroy) = 0x0b51262a for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_kmem_cache_create) = 0xf0202554 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_kmem_cache_alloc) = 0xd1aa34d4 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(spl_kmem_alloc) = 0xb342d16a for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(rwsem_tryupgrade) = 0x4be94236 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(rootdir) = 0x0e7813a4 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(random_get_pseudo_bytes) = 0x2109bc3a for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(p0) = 0xbccac85e for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kstat_waitq_exit) = 0x6127b911 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kstat_waitq_enter) = 0xcc762837 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kstat_runq_exit) = 0xcc8e80f8 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kstat_runq_enter) = 0x150ddbd2 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kobj_read_file) = 0xa2724b1e for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kobj_open_file) = 0xa88e7496 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kobj_get_filesize) = 0x89291f9f for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kobj_close_file) = 0x16837e70 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kmem_vasprintf) = 0x064623de for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kmem_debugging) = 0x75907276 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(kmem_asprintf) = 0xaa65a555 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(groupmember) = 0x8a51e16a for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(ddi_strtoull) = 0xf68905fd for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(ddi_strtol) = 0x82fe53e1 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(ddi_copyout) = 0x431a8a2c for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(ddi_copyin) = 0xd8e07779 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(cv_timedwait_sig_hires) = 0x63aee8aa for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(cv_timedwait_hires) = 0x8da76a54 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(crhold) = 0xbd6bcd08 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(crgetuid) = 0x72cf8c8b for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(crgetruid) = 0xce6d7d76 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(crgetngroups) = 0xbaeceadd for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(crgetgroups) = 0x3098be9f for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(crgetgid) = 0x1b27ac37 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(crgetfsuid) = 0x10761aa5 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(crgetfsgid) = 0xe0b0dd84 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(crfree) = 0xf76b5740 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(cmn_err) = 0x82027a4c for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__thread_exit) = 0x3896a905 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__thread_create) = 0x47805038 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__kstat_set_raw_ops) = 0xbf5f302a for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__kstat_install) = 0xe4db3c03 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__kstat_delete) = 0x79478dcc for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__kstat_create) = 0x235e9bea for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__cv_wait_sig) = 0x24f9a150 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__cv_wait_io) = 0x1305f576 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__cv_wait) = 0x3e43bb06 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__cv_timedwait_sig) = 0xef8c32c0 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__cv_signal) = 0xadd3247e for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__cv_init) = 0x0f1e4497 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__cv_destroy) = 0x459a3b05 for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: ksym(__cv_broadcast) = 0xb75ecbeb for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+--> Processing Dependency: spl-kmod for package: kmod-zfs-0.7.12-1.el7_5.x86_64
+---> Package libnvpair1.x86_64 0:0.7.12-1.el7_5 will be installed
+---> Package libuutil1.x86_64 0:0.7.12-1.el7_5 will be installed
+---> Package libzfs2.x86_64 0:0.7.12-1.el7_5 will be installed
+---> Package libzpool2.x86_64 0:0.7.12-1.el7_5 will be installed
+---> Package spl.x86_64 0:0.7.12-1.el7_5 will be installed
+---> Package sysstat.x86_64 0:10.1.5-19.el7 will be installed
+--> Processing Dependency: libsensors.so.4()(64bit) for package: sysstat-10.1.5-19.el7.x86_64
+--> Running transaction check
+---> Package kmod-spl.x86_64 0:0.7.12-1.el7_5 will be installed
+---> Package lm_sensors-libs.x86_64 0:3.4.0-8.20160601gitf9185e5.el7 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+=============================================================================================================================================================
+ Package                              Arch                        Version                                                Repository                     Size
+=============================================================================================================================================================
+Installing:
+ zfs                                  x86_64                      0.7.12-1.el7_5                                         zfs-kmod                      414 k
+Installing for dependencies:
+ kmod-spl                             x86_64                      0.7.12-1.el7_5                                         zfs-kmod                      114 k
+ kmod-zfs                             x86_64                      0.7.12-1.el7_5                                         zfs-kmod                      896 k
+ libnvpair1                           x86_64                      0.7.12-1.el7_5                                         zfs-kmod                       31 k
+ libuutil1                            x86_64                      0.7.12-1.el7_5                                         zfs-kmod                       36 k
+ libzfs2                              x86_64                      0.7.12-1.el7_5                                         zfs-kmod                      131 k
+ libzpool2                            x86_64                      0.7.12-1.el7_5                                         zfs-kmod                      595 k
+ lm_sensors-libs                      x86_64                      3.4.0-8.20160601gitf9185e5.el7                         base                           42 k
+ spl                                  x86_64                      0.7.12-1.el7_5                                         zfs-kmod                       29 k
+ sysstat                              x86_64                      10.1.5-19.el7                                          base                          315 k
+
+Transaction Summary
+=============================================================================================================================================================
+Install  1 Package (+9 Dependent packages)
+
+Total download size: 2.5 M
+Installed size: 9.4 M
+Downloading packages:
+(1/10): kmod-spl-0.7.12-1.el7_5.x86_64.rpm                                                                                            | 114 kB  00:00:01
+(2/10): libnvpair1-0.7.12-1.el7_5.x86_64.rpm                                                                                          |  31 kB  00:00:00
+(3/10): kmod-zfs-0.7.12-1.el7_5.x86_64.rpm                                                                                            | 896 kB  00:00:01
+(4/10): libuutil1-0.7.12-1.el7_5.x86_64.rpm                                                                                           |  36 kB  00:00:00
+(5/10): libzfs2-0.7.12-1.el7_5.x86_64.rpm                                                                                             | 131 kB  00:00:00
+(6/10): spl-0.7.12-1.el7_5.x86_64.rpm                                                                                                 |  29 kB  00:00:00
+(7/10): zfs-0.7.12-1.el7_5.x86_64.rpm                                                                                                 | 414 kB  00:00:00
+(8/10): lm_sensors-libs-3.4.0-8.20160601gitf9185e5.el7.x86_64.rpm                                                                     |  42 kB  00:00:00
+(9/10): libzpool2-0.7.12-1.el7_5.x86_64.rpm                                                                                           | 595 kB  00:00:01
+(10/10): sysstat-10.1.5-19.el7.x86_64.rpm                                                                                             | 315 kB  00:00:00
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+Total                                                                                                                        708 kB/s | 2.5 MB  00:00:03
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : libuutil1-0.7.12-1.el7_5.x86_64                                                                                                          1/10
+  Installing : libnvpair1-0.7.12-1.el7_5.x86_64                                                                                                         2/10
+  Installing : libzpool2-0.7.12-1.el7_5.x86_64                                                                                                          3/10
+  Installing : kmod-spl-0.7.12-1.el7_5.x86_64                                                                                                           4/10
+  Installing : spl-0.7.12-1.el7_5.x86_64                                                                                                                5/10
+  Installing : libzfs2-0.7.12-1.el7_5.x86_64                                                                                                            6/10
+  Installing : lm_sensors-libs-3.4.0-8.20160601gitf9185e5.el7.x86_64                                                                                    7/10
+  Installing : sysstat-10.1.5-19.el7.x86_64                                                                                                             8/10
+  Installing : kmod-zfs-0.7.12-1.el7_5.x86_64                                                                                                           9/10
+  Installing : zfs-0.7.12-1.el7_5.x86_64                                                                                                               10/10
+  Verifying  : libzfs2-0.7.12-1.el7_5.x86_64                                                                                                            1/10
+  Verifying  : spl-0.7.12-1.el7_5.x86_64                                                                                                                2/10
+  Verifying  : sysstat-10.1.5-19.el7.x86_64                                                                                                             3/10
+  Verifying  : zfs-0.7.12-1.el7_5.x86_64                                                                                                                4/10
+  Verifying  : libzpool2-0.7.12-1.el7_5.x86_64                                                                                                          5/10
+  Verifying  : libuutil1-0.7.12-1.el7_5.x86_64                                                                                                          6/10
+  Verifying  : kmod-spl-0.7.12-1.el7_5.x86_64                                                                                                           7/10
+  Verifying  : kmod-zfs-0.7.12-1.el7_5.x86_64                                                                                                           8/10
+  Verifying  : libnvpair1-0.7.12-1.el7_5.x86_64                                                                                                         9/10
+  Verifying  : lm_sensors-libs-3.4.0-8.20160601gitf9185e5.el7.x86_64                                                                                   10/10
+
+Installed:
+  zfs.x86_64 0:0.7.12-1.el7_5
+
+Dependency Installed:
+  kmod-spl.x86_64 0:0.7.12-1.el7_5                                  kmod-zfs.x86_64 0:0.7.12-1.el7_5           libnvpair1.x86_64 0:0.7.12-1.el7_5
+  libuutil1.x86_64 0:0.7.12-1.el7_5                                 libzfs2.x86_64 0:0.7.12-1.el7_5            libzpool2.x86_64 0:0.7.12-1.el7_5
+  lm_sensors-libs.x86_64 0:3.4.0-8.20160601gitf9185e5.el7           spl.x86_64 0:0.7.12-1.el7_5                sysstat.x86_64 0:10.1.5-19.el7
+
+Complete!
+[root@lvm ~]# shutdown -r now
+Connection to 127.0.0.1 closed by remote host.
+Connection to 127.0.0.1 closed.
+root@otssTestServer:/home/lx/git/stands-03-lvm# vagrant ssh
+Last login: Sun Jun 20 10:15:52 2021 from 10.0.2.2
+[vagrant@lvm ~]$ sudo -i
+[root@lvm ~]# lsmod | grep zfs
+[root@lvm ~]# modprobe zfs
+[root@lvm ~]# lsmod | grep zfs
+zfs                  3564468  0
+zunicode              331170  1 zfs
+zavl                   15236  1 zfs
+icp                   270148  1 zfs
+zcommon                73440  1 zfs
+znvpair                89131  2 zfs,zcommon
+spl                   102412  4 icp,zfs,zcommon,znvpair
+[root@lvm ~]# zpool create -m /mnt/ zfsPool /dev/zfs_VG/opt_LV
+[root@lvm ~]# zpool status
+  pool: zfsPool
+ state: ONLINE
+  scan: none requested
+config:
+
+        NAME        STATE     READ WRITE CKSUM
+        zfsPool     ONLINE       0     0     0
+          opt_LV    ONLINE       0     0     0
+
+errors: No known data errors
+[root@lvm ~]# zfs create zfsPool/opt
+[root@lvm ~]# zfs list
+NAME          USED  AVAIL  REFER  MOUNTPOINT
+zfsPool       122K  5.30G  25.5K  /mnt/
+zfsPool/opt    24K  5.30G    24K  /mnt//opt
+[root@lvm ~]# rm -rf /opt
+[root@lvm ~]# zfs set mountpoint=/opt zfsPool/opt
+[root@lvm ~]# zfs list
+NAME          USED  AVAIL  REFER  MOUNTPOINT
+zfsPool       146K  5.30G    24K  /mnt/
+zfsPool/opt    26K  5.30G    26K  /opt
+[root@lvm ~]# ll / | grep opt
+drwxr-xr-x.   2 root    root       3 Jun 28 16:17 opt
+[root@lvm ~]# for num in {1..20};do touch /opt/${num}.txt;done
+[root@lvm ~]# zfs snapshot zfsPool/opt@snapOpt
+[root@lvm ~]# zfs list
+NAME          USED  AVAIL  REFER  MOUNTPOINT
+zfsPool       166K  5.30G    24K  /mnt/
+zfsPool/opt  39.5K  5.30G  39.5K  /opt
+[root@lvm ~]# zfs list -t snapshot
+NAME                  USED  AVAIL  REFER  MOUNTPOINT
+zfsPool/opt@snapOpt     0B      -  39.5K  -
+[root@lvm ~]# rm -f /opt/1?.txt
+[root@lvm ~]# zfs list -t snapshot
+NAME                  USED  AVAIL  REFER  MOUNTPOINT
+zfsPool/opt@snapOpt    23K      -  39.5K  -
+[root@lvm ~]# ls /opt
+1.txt  20.txt  2.txt  3.txt  4.txt  5.txt  6.txt  7.txt  8.txt  9.txt
+[root@lvm ~]# zfs rollback zfsPool/opt@snapOpt
+[root@lvm ~]# ls /opt
+10.txt  11.txt  12.txt  13.txt  14.txt  15.txt  16.txt  17.txt  18.txt  19.txt  1.txt  20.txt  2.txt  3.txt  4.txt  5.txt  6.txt  7.txt  8.txt  9.txt
+[root@lvm ~]# zfs list -t snapshot
+NAME                  USED  AVAIL  REFER  MOUNTPOINT
+zfsPool/opt@snapOpt    14K      -  39.5K  -
+[root@lvm ~]# lsblk
+NAME                       MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                          8:0    0   40G  0 disk
+├─sda1                       8:1    0    1M  0 part
+├─sda2                       8:2    0    1G  0 part /boot
+└─sda3                       8:3    0   39G  0 part
+  ├─VolGroup00-LogVol00    253:0    0    8G  0 lvm  /
+  ├─VolGroup00-LogVol01    253:1    0  1.5G  0 lvm  [SWAP]
+  └─VolGroup00-LogVol_Home 253:9    0    2G  0 lvm  /home
+sdb                          8:16   0   10G  0 disk
+├─zfs_VG-opt_LV            253:2    0  5.5G  0 lvm
+└─zfs_VG-cache_LV          253:3    0  5.5G  0 lvm
+sdc                          8:32   0    2G  0 disk
+├─vg_var-lv_var_rmeta_0    253:4    0    4M  0 lvm
+│ └─vg_var-lv_var          253:8    0  952M  0 lvm  /var
+└─vg_var-lv_var_rimage_0   253:5    0  952M  0 lvm
+  └─vg_var-lv_var          253:8    0  952M  0 lvm  /var
+sdd                          8:48   0    1G  0 disk
+├─vg_var-lv_var_rmeta_1    253:6    0    4M  0 lvm
+│ └─vg_var-lv_var          253:8    0  952M  0 lvm  /var
+└─vg_var-lv_var_rimage_1   253:7    0  952M  0 lvm
+  └─vg_var-lv_var          253:8    0  952M  0 lvm  /var
+sde                          8:64   0    1G  0 disk
+└─zfs_VG-cache_LV          253:3    0  5.5G  0 lvm
+[root@lvm ~]# ls -l /dev/disk/by-id
+total 0
+lrwxrwxrwx. 1 root root  9 Jun 20 11:59 ata-VBOX_HARDDISK_VB13273d07-07864d95 -> ../../sdc
+lrwxrwxrwx. 1 root root  9 Jun 20 11:59 ata-VBOX_HARDDISK_VB39b57a0d-1409d04e -> ../../sdb
+lrwxrwxrwx. 1 root root  9 Jun 20 11:59 ata-VBOX_HARDDISK_VB77c51bb8-2884c8fd -> ../../sde
+lrwxrwxrwx. 1 root root  9 Jun 20 11:59 ata-VBOX_HARDDISK_VBd1efbfcf-d7474916 -> ../../sda
+lrwxrwxrwx. 1 root root 10 Jun 20 11:59 ata-VBOX_HARDDISK_VBd1efbfcf-d7474916-part1 -> ../../sda1
+lrwxrwxrwx. 1 root root 10 Jun 20 11:59 ata-VBOX_HARDDISK_VBd1efbfcf-d7474916-part2 -> ../../sda2
+lrwxrwxrwx. 1 root root 10 Jun 20 11:59 ata-VBOX_HARDDISK_VBd1efbfcf-d7474916-part3 -> ../../sda3
+lrwxrwxrwx. 1 root root  9 Jun 20 11:59 ata-VBOX_HARDDISK_VBd5cc01c5-026ba177 -> ../../sdd
+lrwxrwxrwx. 1 root root 10 Jun 20 12:00 dm-name-vg_var-lv_var -> ../../dm-8
+lrwxrwxrwx. 1 root root 10 Jun 20 11:59 dm-name-VolGroup00-LogVol00 -> ../../dm-0
+lrwxrwxrwx. 1 root root 10 Jun 20 11:59 dm-name-VolGroup00-LogVol01 -> ../../dm-1
+lrwxrwxrwx. 1 root root 10 Jun 20 12:00 dm-name-VolGroup00-LogVol_Home -> ../../dm-9
+lrwxrwxrwx. 1 root root 10 Jun 20 12:00 dm-name-zfs_VG-cache_LV -> ../../dm-3
+lrwxrwxrwx. 1 root root 10 Jun 20 12:00 dm-name-zfs_VG-opt_LV -> ../../dm-2
+lrwxrwxrwx. 1 root root 10 Jun 20 12:00 dm-uuid-LVM-8ry6V487V1tfmHgHoospVUZfcQwZtsYIq4kccDopF9zdvgyiVh8DXrQOrBEqaoz4 -> ../../dm-3
+lrwxrwxrwx. 1 root root 10 Jun 20 12:00 dm-uuid-LVM-8ry6V487V1tfmHgHoospVUZfcQwZtsYIqbhvyMwdAlPDNKC6MCrwI7zngm3KFD3t -> ../../dm-2
+lrwxrwxrwx. 1 root root 10 Jun 20 11:59 dm-uuid-LVM-SA8LTUF2yzFEV1RdgThw0ZiRxhyHFKuUIAjIC6ScnMtvH67BTyTN31hd82bgDSzd -> ../../dm-1
+lrwxrwxrwx. 1 root root 10 Jun 20 12:00 dm-uuid-LVM-SA8LTUF2yzFEV1RdgThw0ZiRxhyHFKuUOn3GbfofSs3yZUEnRqpQCe2Vvc7mas30 -> ../../dm-9
+lrwxrwxrwx. 1 root root 10 Jun 20 11:59 dm-uuid-LVM-SA8LTUF2yzFEV1RdgThw0ZiRxhyHFKuUQ2EarSIEPLni31sd0SdRAO6EyLVb9lP4 -> ../../dm-0
+lrwxrwxrwx. 1 root root 10 Jun 20 12:00 dm-uuid-LVM-wL7TK3MCUf5nj7Cqzs06utfk9PUUDFu2fbU9DzMAWXylmK2a5xkF0cmOzoE2rapl -> ../../dm-8
+lrwxrwxrwx. 1 root root  9 Jun 20 11:59 lvm-pv-uuid-DDlOll-8saA-AIvp-1RKm-GZUh-k91L-MuUjec -> ../../sdd
+lrwxrwxrwx. 1 root root  9 Jun 20 11:59 lvm-pv-uuid-hsbsVY-q3gi-c7XA-m24k-sfg3-LFIm-aq4dtO -> ../../sde
+lrwxrwxrwx. 1 root root  9 Jun 20 11:59 lvm-pv-uuid-NChyzC-p6Ea-z3cX-KeUG-UgrQ-4QMt-K7GPID -> ../../sdc
+lrwxrwxrwx. 1 root root  9 Jun 20 11:59 lvm-pv-uuid-QkuZoJ-Z9DM-hKt2-LNKB-szTU-bKJF-pszSFv -> ../../sdb
+lrwxrwxrwx. 1 root root 10 Jun 20 11:59 lvm-pv-uuid-vrrtbx-g480-HcJI-5wLn-4aOf-Olld-rC03AY -> ../../sda3
+[root@lvm ~]# zpool add zfsPool cache dm-name-zfs_VG-cache_LV
+[root@lvm ~]# zpool status
+  pool: zfsPool
+ state: ONLINE
+  scan: none requested
+config:
+
+        NAME                       STATE     READ WRITE CKSUM
+        zfsPool                    ONLINE       0     0     0
+          opt_LV                   ONLINE       0     0     0
+        cache
+          dm-name-zfs_VG-cache_LV  ONLINE       0     0     0
+
+errors: No known data errors

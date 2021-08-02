@@ -1,0 +1,57 @@
+Ошибки которые встретились при выполнении ДЗ
+------------------------------------------------------------
+1)Проблемы с перезагрузкой
+[root@lvm ~]# shutdown -r now
+Error getting authority: Error initializing authority: Error calling StartServiceByName for org.freedesktop.PolicyKit1: Timeout was reached (g-io-error-quark, 24)
+Failed to start poweroff.target: Connection timed out
+See system logs and 'systemctl status poweroff.target' for details.
+
+Углубившись в проблему выяснил что не запущен демон
+polkitd
+Polkit (прежнее название: PolicyKit) — библиотека для UNIX-подобных операционных систем. API библиотеки используется для предоставления непривилегированным процессам возможности выполнения действий, требующих прав администратора. Использование Polkit противопоставляется использованию таких систем, как sudo, но не наделяет процесс пользователя правами администратора, а позволяет точно контролировать, что разрешено, а что запрещено. 
+[root@lvm ~]# systemctl status polkit
+● polkit.service - Authorization Manager
+   Loaded: loaded (/usr/lib/systemd/system/polkit.service; static; vendor preset: enabled)
+   Active: inactive (dead) since Sun 2021-06-20 09:07:25 UTC; 4min 55s ago
+     Docs: man:polkit(8)
+  Process: 1445 ExecStart=/usr/lib/polkit-1/polkitd --no-debug (code=exited, status=0/SUCCESS)
+ Main PID: 1445 (code=exited, status=0/SUCCESS)
+
+Jun 20 09:07:25 lvm systemd[1]: Starting Authorization Manager...
+Jun 20 09:07:25 lvm polkitd[1445]: Started polkitd version 0.112
+Jun 20 09:07:25 lvm polkitd[1445]: Loading rules from directory /etc/polkit-1/rules.d
+Jun 20 09:07:25 lvm polkitd[1445]: Loading rules from directory /usr/share/polkit-1/rules.d
+Jun 20 09:07:25 lvm polkitd[1445]: Finished loading, compiling and executing 2 rules
+Jun 20 09:07:25 lvm polkitd[1445]: Lost the name org.freedesktop.PolicyKit1 - exiting
+Jun 20 09:07:25 lvm systemd[1]: Started Authorization Manager.
+
+[root@lvm ~]# systemctl start polkit
+Error getting authority: Error initializing authority: Error calling StartServiceByName for org.freedesktop.PolicyKit1: Timeout was reached (g-io-error-quark, 24)
+Failed to start polkit.service: Connection timed out
+See system logs and 'systemctl status polkit.service' for details.
+
+А недавал запустить демона selinux
+для проверки отключил selinux
+setenforce 0
+[root@lvm ~]# systemctl status polkit
+● polkit.service - Authorization Manager
+   Loaded: loaded (/usr/lib/systemd/system/polkit.service; static; vendor preset: enabled)
+   Active: active (running) since Sun 2021-06-20 09:17:14 UTC; 4s ago
+     Docs: man:polkit(8)
+ Main PID: 1494 (polkitd)
+   CGroup: /system.slice/polkit.service
+           └─1494 /usr/lib/polkit-1/polkitd --no-debug
+
+Jun 20 09:17:14 lvm systemd[1]: Starting Authorization Manager...
+Jun 20 09:17:14 lvm polkitd[1494]: Started polkitd version 0.112
+Jun 20 09:17:14 lvm polkitd[1494]: Loading rules from directory /etc/polkit-1/rules.d
+Jun 20 09:17:14 lvm polkitd[1494]: Loading rules from directory /usr/share/polkit-1/rules.d
+Jun 20 09:17:14 lvm polkitd[1494]: Finished loading, compiling and executing 2 rules
+Jun 20 09:17:14 lvm polkitd[1494]: Acquired the name org.freedesktop.PolicyKit1 on the system bus
+Jun 20 09:17:14 lvm systemd[1]: Started Authorization Manager.
+Jun 20 09:17:14 lvm polkitd[1494]: Registered Authentication Agent for unix-process:1489:117027 (system bus name :1.21 [/usr/bin/pkttyagent --no..._RU.UTF-8)
+Jun 20 09:17:14 lvm polkitd[1494]: Unregistered Authentication Agent for unix-process:1489:117027 (system bus name :1.21, object path /org/freed... from bus)
+Hint: Some lines were ellipsized, use -l to show in full.
+
+restorecon -Rvv /
+restorecon - восстановить SELinux-контексты безопасности файлов по умолчанию

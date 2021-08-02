@@ -1,0 +1,37 @@
+lsblk
+pvcreate /dev/sdb /dev/sde
+vgcreate zfs_VG /dev/sdb /dev/sde
+lvcreate -n opt_LV -l 50%VG zfs_VG
+lvcreate -n cache_LV -l 50%VG zfs_VG
+lsblk
+yum -y install http://download.zfsonlinux.org/epel/zfs-release.el7_5.noarch.rpm
+vi /etc/yum.repos.d/zfs.repo
+yum -y install zfs
+shutdown -r now
+lsmod | grep zfs
+modprobe zfs
+lsmod | grep zfs
+zpool create -m /mnt/ zfsPool /dev/zfs_VG/opt_LV
+zfs status
+zpoll status
+zpol status
+zpool status
+zfs create zfsPool/opt
+zfs list
+rm -rf /opt
+zfs set mountpoint=/opt zfsPool/opt
+zfs list
+ll / | grep opt
+for num in {1..20};do touch /opt/${num}.txt;done
+zfs snapshot zfsPool/opt@snapOpt
+zfs list
+zfs list -t snapshot
+rm -f /opt/1?.txt
+zfs list -t snapshot
+ls /opt
+zfs rollback zfsPool/opt@snapOpt
+ls /opt
+zfs list -t snapshot
+ls -l /dev/disk/by-id
+zpool add zfsPool cache dm-name-zfs_VG-cache_LV
+zpool status
